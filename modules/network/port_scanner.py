@@ -1,57 +1,80 @@
 """
 SentinelX Port Scanner
+Version: 1.0
 """
 
 import socket
-
 from modules.base import Module
+from data.services import COMMON_PORTS
 
 
 class PortScanner(Module):
+    """Port Scanner Module"""
 
     name = "Port Scanner"
     category = "Network"
     description = "Scan a target for open TCP ports."
 
     def run(self):
-
         print("\n===================================")
         print("         PORT SCANNER")
         print("===================================\n")
 
         target = input("Enter an IP Address or Domain: ").strip()
 
-        try:
-            ip = socket.gethostbyname(target)
-
-        except socket.gaierror:
-            print("\n[-] Invalid host or domain.\n")
+        if not target:
+            print("\n[-] Target cannot be empty.\n")
             return
 
-        print(f"\nTarget IP : {ip}")
-        print("Scanning ports 1 - 100...\n")
+        try:
+            ip_address = socket.gethostbyname(target)
 
-        open_ports = []
+            print("\nTarget Information")
+            print("------------------")
+            print(f"Host : {target}")
+            print(f"IP   : {ip_address}")
+            print("\nScanning ports 1 - 100...\n")
 
-        for port in range(1, 101):
+            open_ports = []
 
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            for port in range(1, 101):
 
-            sock.settimeout(0.5)
+                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-            result = sock.connect_ex((ip, port))
+                sock.settimeout(0.5)
 
-            if result == 0:
-                print(f"[OPEN] Port {port}")
-                open_ports.append(port)
+                result = sock.connect_ex((ip_address, port))
 
-            sock.close()
+                if result == 0:
+                    service = COMMON_PORTS.get(port, "Unknown Service")
+                    
+                    open_ports.append({
+                        "port": port,
+                        "service": service
+                    })
 
-        print("\n===================================")
-        print("Scan Complete")
-        print("===================================")
+                sock.close()
 
-        if open_ports:
-            print(f"\nOpen Ports Found: {len(open_ports)}")
-        else:
-            print("\nNo open ports found.")
+            print("\n===================================")
+            print("Scan Complete")
+            print("===================================")
+
+            if open_ports:
+                 print("\n=========================================")
+                 print("         PORT SCAN RESULTS")
+                 print("=========================================")
+                 print(f"{'PORT':<10}{'STATE':<10}{'SERVICE'}")
+                 print("-" * 40)
+
+                 for result in open_ports:
+                     print(f"{result['port']:<10}{'OPEN':<10}{result['service']}")
+
+                 print("-" * 40)
+                 print(f"Total Open Ports : {len(open_ports)}")
+
+            else:
+                 print("\nNo open ports found.")
+
+        except socket.gaierror:
+            print("\n[-] Unable to resolve the target.")
+            print("Please enter a valid IP address or domain.\n")
