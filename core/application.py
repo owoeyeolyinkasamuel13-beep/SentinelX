@@ -2,6 +2,7 @@ from utils.banner import display_banner
 from core.registry import ModuleRegistry
 from modules.network.port_scanner import PortScanner
 from modules.network.ping_tool import PingTool
+from modules.network.dns_lookup import DNSLookup
 
 class Application:
 
@@ -9,7 +10,7 @@ class Application:
         self.registry = ModuleRegistry()
         self.registry.register(PortScanner())
         self.registry.register(PingTool())
-
+        self.registry.register(DNSLookup())
     def start(self):
 
         display_banner()
