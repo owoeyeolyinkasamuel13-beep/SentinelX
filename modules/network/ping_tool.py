@@ -6,6 +6,7 @@ Project: SentinelX Community Edition
 """
 
 import platform
+import re
 import subprocess
 
 from modules.base import Module
@@ -20,31 +21,47 @@ def parse_ping_output(output):
     """Parse Windows ping output."""
 
     data = {
-    "host": "",
-    "ip": "",
-    "packets": "",
-    "time": ""
-     }
-    lines = output.splitlines()
+        "host": "",
+        "ip": "",
+        "sent": None,
+        "received": None,
+        "loss_percent": None,
+        "minimum": None,
+        "maximum": None,
+        "average": None,
+    }
 
-    for line in lines:
+    host_match = re.search(
+        r"^Pinging\s+(?P<host>[^\s\[]+)(?:\s+\[(?P<ip>[^\]]+)\])?\s+with",
+        output,
+        re.MULTILINE | re.IGNORECASE,
+    )
+    if host_match:
+        data["host"] = host_match.group("host")
+        data["ip"] = host_match.group("ip") or data["host"]
 
-        line = line.strip()
+    packet_match = re.search(
+        r"Packets:\s*Sent\s*=\s*(?P<sent>\d+),\s*"
+        r"Received\s*=\s*(?P<received>\d+),.*?\((?P<loss_percent>\d+)%\s*loss\)",
+        output,
+        re.IGNORECASE,
+    )
+    if packet_match:
+        data["sent"] = int(packet_match.group("sent"))
+        data["received"] = int(packet_match.group("received"))
+        data["loss_percent"] = int(packet_match.group("loss_percent"))
 
-        if line.startswith("Pinging"):
-
-            parts = line.split()
-
-            data["host"] = parts[1]
-
-            if "[" in line and "]" in line:
-                data["ip"] = line.split("[")[1].split("]")[0]
-
-        elif line.startswith("Packets:"):
-            data["packets"] = line
-
-        elif line.startswith("Minimum"):
-            data["time"] = line
+    timing_match = re.search(
+        r"Minimum\s*=\s*(?P<minimum>\d+)ms,\s*"
+        r"Maximum\s*=\s*(?P<maximum>\d+)ms,\s*"
+        r"Average\s*=\s*(?P<average>\d+)ms",
+        output,
+        re.IGNORECASE,
+    )
+    if timing_match:
+        data["minimum"] = int(timing_match.group("minimum"))
+        data["maximum"] = int(timing_match.group("maximum"))
+        data["average"] = int(timing_match.group("average"))
 
     return data
 
@@ -96,8 +113,20 @@ class PingTool(Module):
             print(f"IP Address : {ping_data['ip']}")
             print()
 
-            print(ping_data["packets"])
-            print(ping_data["time"])
+            lost = ""
+            if ping_data["sent"] is not None and ping_data["received"] is not None:
+                lost = ping_data["sent"] - ping_data["received"]
+
+            print(
+                f"Packets: Sent = {ping_data['sent']}, "
+                f"Received = {ping_data['received']}, "
+                f"Lost = {lost} ({ping_data['loss_percent']}% loss),"
+            )
+            print(
+                f"Minimum = {ping_data['minimum']}ms, "
+                f"Maximum = {ping_data['maximum']}ms, "
+                f"Average = {ping_data['average']}ms"
+            )
 
            
 
