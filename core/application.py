@@ -3,6 +3,7 @@ from core.registry import ModuleRegistry
 from modules.network.port_scanner import PortScanner
 from modules.network.ping_tool import PingTool
 from modules.network.dns_lookup import DNSLookup
+from modules.network.whois_lookup import WHOISLookup
 
 class Application:
 
@@ -11,6 +12,7 @@ class Application:
         self.registry.register(PortScanner())
         self.registry.register(PingTool())
         self.registry.register(DNSLookup())
+        self.registry.register(WHOISLookup())
     def start(self):
 
         display_banner()
