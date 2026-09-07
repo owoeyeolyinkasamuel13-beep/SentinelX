@@ -1,6 +1,6 @@
 """
 SentinelX DNS Lookup Tool
-Version: 1.1.0
+Version: 1.2.0
 Author: Olayinka Samuel Owoeye
 Project: SentinelX Community Edition
 """
@@ -36,11 +36,40 @@ class DNSLookup(Module):
         print(f"Domain : {domain}")
 
         try:
-            ip_address = socket.gethostbyname(domain)
+            ipv4_addresses, ipv6_addresses = self._resolve_addresses(domain)
 
             print_section("Lookup Result")
-            print(f"Resolved IP : {ip_address}")
+            self._display_addresses("IPv4 Address", ipv4_addresses)
+            self._display_addresses("IPv6 Address", ipv6_addresses)
             print_success("DNS lookup completed successfully.")
 
         except socket.gaierror:
             print_error("Unable to resolve domain.")
+
+    @staticmethod
+    def _resolve_addresses(domain):
+        """Resolve a domain and return unique IPv4 and IPv6 addresses."""
+
+        results = socket.getaddrinfo(domain, None)
+        ipv4_addresses = []
+        ipv6_addresses = []
+
+        for address_family, _, _, _, sockaddr in results:
+            address = sockaddr[0]
+
+            if address_family == socket.AF_INET and address not in ipv4_addresses:
+                ipv4_addresses.append(address)
+            elif address_family == socket.AF_INET6 and address not in ipv6_addresses:
+                ipv6_addresses.append(address)
+
+        return ipv4_addresses, ipv6_addresses
+
+    @staticmethod
+    def _display_addresses(address_label, addresses):
+        """Display resolved addresses for an IP family."""
+
+        if addresses:
+            for address in addresses:
+                print(f"{address_label}: {address}")
+        else:
+            print(f"{address_label}s: None found")
